@@ -1,0 +1,315 @@
+<!DOCTYPE html> 
+<html>
+<head>
+<meta charset="utf-8">
+<title>Aplic. Web de jQuery Mobile</title>
+<!-- PARA LOS MAPAS  -->
+
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<style type="text/css">
+  html { height: 100% }
+  body { height: 100%; margin: 0; padding: 0 }
+  #map_canvas { height: 100% }
+</style>
+<script type="text/javascript"
+    src="http://maps.googleapis.com/maps/api/js?sensor=true">		 
+</script>
+
+
+<!-- ESTO ES PARA LA CONEXION AL SERVIDOR  -->
+<link href="jquery-mobile/jquery.mobile-1.0a3.min.css" rel="stylesheet" type="text/css"/>
+<script src="jquery-mobile/jquery-1.5.min.js" type="text/javascript"></script>
+<script src="jquery-mobile/jquery.mobile-1.0a3.min.js" type="text/javascript"></script>
+</head> 
+<body> 
+
+<div data-role="page" id="inicio">
+ 
+    <div data-role="header">
+    	<h1>Autenticacion de Usuario</h1>
+    </div>
+    <div data-role="content">	
+        <form id="formulario" >
+        <label> Usuario </label>
+        <input type="text" id="nombredeusuario" name="nombredeusuario">
+        <label> Password </label>
+        <input type="password" id="clave" name="clave" >
+         
+        <input type="submit" value="Login" id="botonLogin">
+        </form>	
+    </div>
+</div>
+
+<div data-role="page" id="home">
+ 
+    <div data-role="header">
+    	<h1>Bienvenido</h1>
+    </div>
+ 
+    <div data-role="content">	
+    	<h2> Bienvenido a la aplicacion </h2><br><br>
+        <input type="button" value="Llenar Datos" id="Datos"><br><br>
+        <input type="button" value="Ver Datos" id="bVerDatos"><br><br>
+    </div>
+ 
+</div>
+
+<div data-role="page" id="llenaDatos">
+ 
+    <div data-role="header">
+    	<h1>LLENAR DATOS</h1>
+    </div>
+ 
+    <div data-role="content">	
+    	
+        <table width="100%">
+        	<tr>
+            	<td width="50%" align="right">
+                	<b>NOMBRE:</b>
+                </td>
+                <td width="50%" align="left">
+                	<input type="text" id="nombre" name="nombre">                    
+                </td>
+            </tr>        
+            
+            <tr>
+            	<td width="50%" align="right">
+                	<b>TELEFONO:</b>
+                </td>
+                <td width="50%" align="left">
+                	<input type="text" id="tel" name="tel">                    
+                </td>
+            </tr>        
+        </table>
+        
+        <br><br>
+       
+       	<table align="center">
+        	<tr>
+            	<td width="100%" align="center">
+                	<input type="button" value="ENVIAR" id="bEnviar" name="bEnviar">
+                </td>
+            </tr>
+        </table>
+    </div>
+ 
+</div>
+
+
+<div data-role="page" id="verDatos">
+ 
+    <div data-role="header">
+    	<h1>VER DATOS</h1>
+    </div>
+ 
+    <div data-role="content">	
+    	
+        <div id="misDatos"></div>
+        <button  id='bMiUbica' name="bMiUbica"> mostrar mi ubicacion </button>
+    </div>
+ 
+</div>
+
+
+<div data-role="page" id="verMapa" >
+ 
+    <div data-role="header">
+    	<h1>VER MAPA</h1>
+    </div>
+ 
+    <div data-role="content">	
+
+        <div id="map_canvas" style="width:100%; height:90%"></div>
+    </div>
+ 
+</div>
+
+
+
+
+<script>
+ var gUsuario;
+ var gPass;
+ var posicion_Lat;
+ var posicion_Lon;
+ 
+ var map;
+ var latitud;
+ var longitud;
+ var precision;
+ 
+ var vPos;
+ 
+ 
+ 
+ navigator.geolocation.getCurrentPosition(coordenadas, errores);
+ 
+
+ 
+$('#formulario').submit(function() {
+	// recolecta los valores que inserto el usuario
+	var datosUsuario = $("#nombredeusuario").val()
+	var datosPassword = $("#clave").val()
+	archivoValidacion = "https://189.254.70.49:33310/PRODEM/celular/validacion_de_datos.php?jsoncallback=?"
+	
+	gUsuario = datosUsuario
+	gPass = datosPassword
+	 
+	$.getJSON( archivoValidacion, { usuario:datosUsuario ,password:datosPassword})
+		.done(function(respuestaServer) {
+			alert(respuestaServer.mensaje + "\nGenerado en: " + respuestaServer.hora + "\n" +respuestaServer.generador)
+			if(respuestaServer.validacion == "ok"){
+				
+				/// si la validacion es correcta, muestra la pantalla "home"
+				$.mobile.changePage("#home")
+			}else{
+				/// ejecutar una conducta cuando la validacion falla
+			}
+		})
+	return false;
+})
+/****   MANDA A LLENAR LOS DATOS  ****/
+
+$('#Datos').click(function() {
+	
+	$.mobile.changePage("#llenaDatos")			
+			
+})
+
+
+/**************   FUNCION PARA RECUPERAR LOS VALORES Y MANDARLOS A GUARDAR A LA BD  ************************/
+$('#bEnviar').click(function() {
+	
+	// recolecta los valores que inserto el usuario
+	var nombre = $("#nombre").val()
+	var tel = $("#tel").val()
+	
+	//var pos = posicion;
+	
+	 
+	alert("sNombre:"+nombre +",sTel:"+tel +", ubica:"+posicion_Lon+","+posicion_Lat+", usuario:"+gUsuario+" ,password:"+gPass)
+	
+	archivoValidacion = "https://189.254.70.49:33310/PRODEM/celular/guarda_datos.php?jsoncallback=?"
+	 
+	$.getJSON( archivoValidacion, { sNombre:nombre ,sTel:tel, ubica_lat:posicion_Lat, ubica_lon:posicion_Lon, usuario:gUsuario ,password:gPass})
+		.done(function(respuestaServer) {
+			alert(respuestaServer.mensaje + "\nGenerado en: " + respuestaServer.hora + "\n" +respuestaServer.generador)
+			if(respuestaServer.validacion == "ok"){
+							
+				/// si la validacion es correcta, muestra la pantalla "home"
+				$.mobile.changePage("#home")
+			}else{
+				/// ejecutar una conducta cuando la validacion falla
+			}
+		})
+	return false;
+})
+
+ 	function coordenadas(position) {
+		latitud = position.coords.latitude;
+		longitud = position.coords.longitude;
+		//alert("uno "+latitud+"dos "+longitud)
+		posicion_Lat = latitud;
+		posicion_Lon = longitud;
+		
+	}
+	
+	function errores(err) {
+		if (err.code == 0) {
+		  alert("Oops! Algo ha salido mal");
+		}
+		if (err.code == 1) {
+		  alert("Oops! No has aceptado compartir tu posición");
+		}
+		if (err.code == 2) {
+		  alert("Oops! No se puede obtener la posición actual");
+		}
+		if (err.code == 3) {
+		  alert("Oops! Hemos superado el tiempo de espera");
+		}
+	}
+	
+	function cargarMapa() {
+		var latlon = new google.maps.LatLng(latitud,longitud);
+		var myOptions = {
+			zoom: 17,
+			center: latlon,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+		map = new google.maps.Map($("#map_canvas").get(0), myOptions);
+		
+		var coorMarcador = new google.maps.LatLng(latitud,longitud);
+			
+		var marcador = new google.maps.Marker({
+			position: coorMarcador,
+			map: map,
+			title: "Dónde estoy?"
+		});
+	
+	}
+
+
+$('#bVerDatos').click(function() {
+	
+	$.mobile.changePage("#verDatos")
+	
+	//mandando datos para recuperar
+	archivoValidacion = "https://189.254.70.49:33310/PRODEM/celular/recuperaDatos.php?jsoncallback=?"
+	
+	$.getJSON( archivoValidacion, { usuario:gUsuario ,password:gPass})
+		.done(function(respuestaServer) {
+			//alert(respuestaServer.mensaje + "\nGenerado en: " + respuestaServer.hora + "\n" +respuestaServer.generador)
+			if(respuestaServer.validacion == "ok"){
+				var i = respuestaServer.cuantos	
+				var posicion = respuestaServer.posicion
+				
+				//vPos = posicion.split('|');
+				/// si la validacion es correcta, muestra la pantalla "home"
+				//alert(respuestaServer.posicion)
+				$('#misDatos').html(respuestaServer.datos);
+			}else{
+				/// ejecutar una conducta cuando la validacion falla
+			}
+		})
+	return false;
+			
+})
+
+
+$('#bMiUbica').click(function() {
+	
+	$.mobile.changePage("#verMapa")
+	
+	navigator.geolocation.getCurrentPosition(coordenadas, errores);	
+	initialize();  
+	
+			
+})
+
+
+		function initialize() {
+    var latlng = new google.maps.LatLng(posicion_Lat,posicion_Lon);
+    var myOptions = {
+      zoom: 8,
+      center: latlng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      zoomControl: true
+    };
+	
+    map = new google.maps.Map(document.getElementById("map_canvas"),
+        myOptions);
+	alert(map)	
+		
+    marcador = new google.maps.Marker( {
+		position: latlng,
+		map:map	
+	})
+	//mostrarUbicacion()
+  }
+  
+  
+
+</script>
+
+</body>
+</html>
